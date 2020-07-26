@@ -1,0 +1,2 @@
+# HadesRPG
+ Hades RPG bot
