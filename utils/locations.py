@@ -154,7 +154,7 @@ class BaseMap:
                 embed = discord.Embed(title="Actions", color=discord.Color.green())
                 embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
                 files = [discord.File('images/modified/modified_map.png')]
-                await ctx.send(files=files)
+                await ctx.send(files=files, embed=embed)
 
                 next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
                 next_move = next_move_message.content.lower()
