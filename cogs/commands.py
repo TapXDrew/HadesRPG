@@ -603,7 +603,7 @@ class General(commands.Cog):
             return await ctx.send("To invite a user to your party they must be in the same area as you!")
         if party_follower.in_party:
             return await ctx.send(f"{user.name} is already in a party and can not be invited to a new one until they leave")
-        if party_master.party_master != ctx.author.id:
+        if party_master.party_master and party_master.party_master != ctx.author.id:
             return await ctx.send(f"Only the party master can invite people to the party!")
 
         reaction_message = await ctx.send(f"{ctx.author.nick if ctx.author.nick else ctx.author.name} has invited you to join their party! Do you want to join?")

@@ -87,7 +87,7 @@ def astar(maze, start, end, character):
 
 class BaseMap:
     def __init__(self, map_size=(0, 0)):
-        self.map_size = map_size
+        self.map_size = (map_size[0]+1, map_size[1]+1)
         self.image = None
         self._map = self._generate_map()
         self.monsters = []
@@ -127,7 +127,7 @@ class BaseMap:
             total_level += follower_character.level
 
             party.append((follower_discord_user, follower_character))
-            location.place_person_on_map(follower_character, (number + 2, 1))
+            location.place_person_on_map(follower_character, (1, number + 2))
 
         spawning_monsters = math.ceil(total_level/10)
 
@@ -137,26 +137,23 @@ class BaseMap:
             spawning_monsters = 5
 
         for number in range(spawning_monsters):
-            print(number)
             spawned_monster = random.choice(location.monsters)(location=location)
             monsters.append(spawned_monster)
             location.place_person_on_map(spawned_monster, (9, number+1))
 
         while True:
             image = location.draw_to_map(party[0][1], party[0][1].last_cords)
-            for char in party[1:]:
+            for char in party:
                 image = location.draw_to_map(char[1], char[1].last_cords, image)
 
-            for mons in monsters:
-                image = location.draw_to_map(mons, mons.last_cords, image)
-
-            for char in party:
+                for mons in monsters:
+                    image = location.draw_to_map(mons, mons.last_cords, image)
                 embed = discord.Embed(title="Actions", color=discord.Color.green())
                 embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
                 files = [discord.File('images/modified/modified_map.png')]
                 await ctx.send(files=files, embed=embed)
 
-                next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+                next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == char[0].id)
                 next_move = next_move_message.content.lower()
                 try:
                     if " " in next_move:
@@ -165,28 +162,28 @@ class BaseMap:
                         command, option = next_move, None
                     if command in ["&m", "&move"]:
                         if option in ['u', 'up']:
-                            moved, err_msg = location.move_player(character, (0, -1))
+                            moved, err_msg = location.move_player(char[1], (0, -1))
                             if moved:
                                 pass
                             else:
                                 await ctx.send("You cant move further up" if not err_msg else err_msg)
                                 continue
                         elif option in ['d', 'down']:
-                            moved, err_msg = location.move_player(character, (0, 1))
+                            moved, err_msg = location.move_player(char[1], (0, 1))
                             if moved:
                                 pass
                             else:
                                 await ctx.send("You cant move further down" if not err_msg else err_msg)
                                 continue
                         elif option in ['l', 'left']:
-                            moved, err_msg = location.move_player(character, (-1, 0))
+                            moved, err_msg = location.move_player(char[1], (-1, 0))
                             if moved:
                                 pass
                             else:
                                 await ctx.send("You cant move further left" if not err_msg else err_msg)
                                 continue
                         elif option in ['r', 'right']:
-                            moved, err_msg = location.move_player(character, (1, 0))
+                            moved, err_msg = location.move_player(char[1], (1, 0))
                             if moved:
                                 pass
                             else:
@@ -195,7 +192,7 @@ class BaseMap:
                         else:
                             continue
                     elif command in ["&a", "&att", "&attack"]:
-                        near_monster_list = location.is_near_monster(character, monsters)
+                        near_monster_list = location.is_near_monster(char[1], monsters)
                         if not near_monster_list:
                             await ctx.send("No monsters near you to attack!")
                         elif len(near_monster_list) > 1:
@@ -206,25 +203,24 @@ class BaseMap:
                                 try:
                                     attacking_num = int(attacking)
                                     if attacking_num in range(len(near_monster_list)):
-                                        player_damage, weapon = character.attack(near_monster_list[attacking])
-                                        await ctx.send(f"{character.name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
+                                        player_damage, weapon = char[1].attack(near_monster_list[attacking])
+                                        await ctx.send(f"{char[1].name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
                                     else:
                                         continue
                                 except ValueError:
                                     continue
                         else:
-                            player_damage, weapon = character.attack(near_monster_list[0])
-                            await ctx.send(
-                                f"{character.name} attacked {near_monster_list[0].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[0].name} now has {near_monster_list[0].health} health left!")
+                            player_damage, weapon = char[1].attack(near_monster_list[0])
+                            await ctx.send(f"{char[1].name} attacked {near_monster_list[0].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[0].name} now has {near_monster_list[0].health} health left!")
                     elif command in ['&pass']:
                         pass
 
                     for monst in monsters:
-                        moved, monster_damage = location.target_player(monst, character)
+                        moved, monster_damage = location.target_player(monst, char[1])
                         if moved:
                             pass
                         else:
-                            await ctx.send(f"{character.name} was attacked by {monst.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {character.health} health left")
+                            await ctx.send(f"{char[1].name} was attacked by {monst.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {char[1].health} health left")
                 except ValueError:
                     continue
 
@@ -343,7 +339,7 @@ class Tartarus(BaseMap):
 # These are each town/place/location. They tell you what location you can travel to and where they are located at, such as the inn being in the Sanctum and the isle being in Elysium
 class inn(Sanctum):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'inn'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🍹'
@@ -352,7 +348,7 @@ class inn(Sanctum):
 
 class garden(Sanctum):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'garden'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌸'
@@ -361,7 +357,7 @@ class garden(Sanctum):
 
 class temple(Sanctum):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'temple'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '⛲'
@@ -370,7 +366,7 @@ class temple(Sanctum):
 
 class market(Sanctum):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'market'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🎏'
@@ -379,7 +375,7 @@ class market(Sanctum):
 
 class arena(Sanctum):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'arena'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🔰'
@@ -388,7 +384,7 @@ class arena(Sanctum):
 
 class tavern(Pandaemonium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'tavern'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🍺'
@@ -397,7 +393,7 @@ class tavern(Pandaemonium):
 
 class courtyard(Pandaemonium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'courtyard'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🕌'
@@ -406,7 +402,7 @@ class courtyard(Pandaemonium):
 
 class dungeon(Pandaemonium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'dungeon'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '⛓'
@@ -415,7 +411,7 @@ class dungeon(Pandaemonium):
 
 class bazaar(Pandaemonium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'bazaar'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🎎'
@@ -424,7 +420,7 @@ class bazaar(Pandaemonium):
 
 class pits(Pandaemonium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'pits'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '💢'
@@ -435,7 +431,7 @@ class pits(Pandaemonium):
 
 class meadow(Elysium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'meadow'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌻'
@@ -444,7 +440,7 @@ class meadow(Elysium):
 
 class isle(Elysium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'isle'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌴'
@@ -453,7 +449,7 @@ class isle(Elysium):
 
 class grove(Elysium):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'grove'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌲'
@@ -462,7 +458,7 @@ class grove(Elysium):
 
 class bridge(Abyss):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'bridge'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌉'
@@ -471,7 +467,7 @@ class bridge(Abyss):
 
 class hall(Abyss):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'hall'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌑'
@@ -480,7 +476,7 @@ class hall(Abyss):
 
 class styx(Abyss):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'styx'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '👻'
@@ -490,7 +486,7 @@ class styx(Abyss):
 
 class palace(Abyss):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'palace'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🏰'
@@ -499,7 +495,7 @@ class palace(Abyss):
 
 class meadows(Tartarus):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'meadows'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🥀'
@@ -508,7 +504,7 @@ class meadows(Tartarus):
 
 class wasteland(Tartarus):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'wasteland'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🦂'
@@ -517,7 +513,7 @@ class wasteland(Tartarus):
 
 class volcano(Tartarus):
     def __init__(self):
-        super().__init__(map_size=(9, 11))
+        super().__init__(map_size=(11, 9))
         self.place = 'volcano'
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '🌋'
