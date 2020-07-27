@@ -137,13 +137,13 @@ class BaseMap:
             spawning_monsters = 5
 
         for number in range(spawning_monsters):
+            print(number)
             spawned_monster = random.choice(location.monsters)(location=location)
             monsters.append(spawned_monster)
-            location.place_person_on_map(spawned_monster, (number+1, 9))
-
-        image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+            location.place_person_on_map(spawned_monster, (9, number+1))
 
         while True:
+            image = location.draw_to_map(party[0][1], party[0][1].last_cords)
             for char in party[1:]:
                 image = location.draw_to_map(char[1], char[1].last_cords, image)
 
