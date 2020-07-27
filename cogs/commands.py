@@ -184,7 +184,7 @@ class General(commands.Cog):
 
         embed = discord.Embed(title=f"{character.name} ({character.type})", color=discord.Color.green())
         embed.add_field(name="HP & Armor", value=f"{character.health} HP with {character.armor} armor", inline=False)
-        embed.add_field(name="Level & XP", value=f"{character.level} ({character.xp}/{level_info['Needed XP']+1})", inline=False)
+        embed.add_field(name="Level & XP", value=f"{character.level} ({character.display_xp}/{level_info['Needed XP']+1})", inline=False)
         embed.add_field(name="Location", value=character.location, inline=False)
         embed.add_field(name="Level Up Points and Stats",
                         value=f"Points Available --> {character.points}\nPower Level: {character.power}\nSpeed Level: {character.speed}\nKnowledge Level: {character.knowledge}",
@@ -217,7 +217,7 @@ class General(commands.Cog):
 
         embed = discord.Embed(title=f"{character.name} ({character.type})", color=discord.Color.green())
         embed.add_field(name="HP & Armor", value=f"{character.health} HP with {character.armor} armor", inline=False)
-        embed.add_field(name="Level & XP", value=f"{character.level} ({character.xp}/{level_info['Needed XP'] + 1})",
+        embed.add_field(name="Level & XP", value=f"{character.level} ({character.display_xp}/{level_info['Needed XP'] + 1})",
                         inline=False)
         embed.add_field(name="Location", value=character.location, inline=False)
         embed.add_field(name="Level Up Points and Stats",
@@ -253,7 +253,7 @@ class General(commands.Cog):
 
         embed = discord.Embed(title=f"{character.name} ({character.type})", color=discord.Color.green())
         embed.add_field(name="HP & Armor", value=f"{character.health} HP with {character.armor} armor", inline=False)
-        embed.add_field(name="Level & XP", value=f"{character.level} ({character.xp}/{level_info['Needed XP'] + 1})",
+        embed.add_field(name="Level & XP", value=f"{character.level} ({character.display_xp}/{level_info['Needed XP'] + 1})",
                         inline=False)
         embed.add_field(name="Location", value=character.location, inline=False)
         embed.add_field(name="Level Up Points and Stats",
@@ -288,7 +288,7 @@ class General(commands.Cog):
 
         embed = discord.Embed(title=f"{character.name} ({character.type})", color=discord.Color.green())
         embed.add_field(name="HP & Armor", value=f"{character.health} HP with {character.armor} armor", inline=False)
-        embed.add_field(name="Level & XP", value=f"{character.level} ({character.xp}/{level_info['Needed XP'] + 1})",
+        embed.add_field(name="Level & XP", value=f"{character.level} ({character.display_xp}/{level_info['Needed XP'] + 1})",
                         inline=False)
         embed.add_field(name="Location", value=character.location, inline=False)
         embed.add_field(name="Level Up Points and Stats",
@@ -388,7 +388,7 @@ class General(commands.Cog):
         elif user.character_3 == user.active_character:
             column = 'character_3'
         else:
-            return
+            return await ctx.send("INVALID PLAYER DATA")
 
         if character.in_party and character.party_master != ctx.author.id:
             return await ctx.send("You must `&leave` your current party to travel!")
@@ -459,115 +459,115 @@ class General(commands.Cog):
                 await ctx.author.add_roles(location_role)
                 await message.edit(content=f"{ctx.author.nick if ctx.author.nick else ctx.author.name} traveled to {traveling_to.capitalize()}" if not character.party else f"{ctx.author.nick if ctx.author.nick else ctx.author.name} and their party of {len(character.party):,} traveled to {traveling_to.capitalize()}")
 
-                # self.start_monster_fight(location=eval(traveling_to.lower())())
+                await eval(traveling_to.lower())().start_fight(self.bot, ctx, user)
             else:
                 continue
 
-    @commands.command(name="Attack", aliases=[])
-    async def attack_CMD(self, ctx):
-        await ctx.send("TEST COMMAND -- WILL NOT BE IN BOT SOON")
-        user = User(self.bot, ctx)
-
-        character_dump = user.active_character
-        character_class_name = character_dump.split(";")[1]
-        character = eval(character_class_name)(character_dump)
-        ghost = utils.monsters.Ghost(name="Ghost", location=styx(), level=5, power=12, speed=1, health=10, armor=0)
-
-        if user.character_1 == user.active_character:
-            column = 'character_1'
-        elif user.character_2 == user.active_character:
-            column = 'character_2'
-        elif user.character_3 == user.active_character:
-            column = 'character_3'
-        else:
-            return
-
-        character.number = 1
-        ghost.number = 6
-
-        monsters = [ghost]
-        party = [character]
-
-        play_area = pits()
-
-        play_area.place_person_on_map(character, (3, 4))
-        play_area.place_person_on_map(ghost, (7, 4))
-
-        while True:
-            image = play_area.draw_to_map(character, character.last_cords)
-            play_area.draw_to_map(ghost, ghost.last_cords, image)
-
-            files = [discord.File('images/modified/modified_map.png')]
-            await ctx.send(files=files)
-
-            await ctx.send("Where do you want to move? (&move <up | down | left | right>)")
-            next_move_message = await self.bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
-            next_move = next_move_message.content.lower()
-            try:
-                if " " in next_move:
-                    command, option = next_move.split(" ")
-                else:
-                    command, option = next_move, None
-                if command in ["&m", "&move"]:
-                    if option in ['u', 'up']:
-                        moved, err_msg = play_area.move_player(character, (0, -1))
-                        if moved:
-                            pass
-                        else:
-                            await ctx.send("You cant move further up" if not err_msg else err_msg)
-                            continue
-                    elif option in ['d', 'down']:
-                        moved, err_msg = play_area.move_player(character, (0, 1))
-                        if moved:
-                            pass
-                        else:
-                            await ctx.send("You cant move further down" if not err_msg else err_msg)
-                            continue
-                    elif option in ['l', 'left']:
-                        moved, err_msg = play_area.move_player(character, (-1, 0))
-                        if moved:
-                            pass
-                        else:
-                            await ctx.send("You cant move further left" if not err_msg else err_msg)
-                            continue
-                    elif option in ['r', 'right']:
-                        moved, err_msg = play_area.move_player(character, (1, 0))
-                        if moved:
-                            pass
-                        else:
-                            await ctx.send("You cant move further right" if not err_msg else err_msg)
-                            continue
-                    else:
-                        continue
-                elif command in ["&a", "&att", "&attack"]:
-                    near_monster_list = play_area.is_near_monster(character, monsters)
-                    if not near_monster_list:
-                        await ctx.send("No monsters near you to attack!")
-                    elif len(near_monster_list) > 1:
-                        await ctx.send(f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum+1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
-                        while True:
-                            attacking = await self.bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
-                            try:
-                                attacking_num = int(attacking)
-                                if attacking_num in range(len(near_monster_list)):
-                                    player_damage, weapon = character.attack(near_monster_list[attacking])
-                                    await ctx.send(f"{character.name} attacked {ghost.name} with {weapon} and hit them for {player_damage} damage! {ghost.name} now has {ghost.health} health left!")
-                                else:
-                                    continue
-                            except ValueError:
-                                continue
-                    else:
-                        player_damage, weapon = character.attack(near_monster_list[0])
-                        await ctx.send(f"{character.name} attacked {ghost.name} with {weapon} and hit them for {player_damage} damage! {ghost.name} now has {ghost.health} health left!")
-                elif command in ['&pass']:
-                    pass
-                moved, monster_damage = play_area.target_player(ghost, character)
-                if moved:
-                    pass
-                else:
-                    await ctx.send(f"{character.name} was attacked by {ghost.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {character.health} health left")
-            except ValueError:
-                continue
+    # @commands.command(name="Attack", aliases=[])
+    # async def attack_CMD(self, ctx):
+    #     await ctx.send("TEST COMMAND -- WILL NOT BE IN BOT SOON")
+    #     user = User(self.bot, ctx)
+    #
+    #     character_dump = user.active_character
+    #     character_class_name = character_dump.split(";")[1]
+    #     character = eval(character_class_name)(character_dump)
+    #     ghost = utils.monsters.Ghost(name="Ghost", location=styx(), level=5, power=12, speed=1, health=10, armor=0)
+    #
+    #     if user.character_1 == user.active_character:
+    #         column = 'character_1'
+    #     elif user.character_2 == user.active_character:
+    #         column = 'character_2'
+    #     elif user.character_3 == user.active_character:
+    #         column = 'character_3'
+    #     else:
+    #         return
+    #
+    #     character.number = 1
+    #     ghost.number = 6
+    #
+    #     monsters = [ghost]
+    #     party = [character]
+    #
+    #     play_area = pits()
+    #
+    #     play_area.place_person_on_map(character, (3, 4))
+    #     play_area.place_person_on_map(ghost, (7, 4))
+    #
+    #     while True:
+    #         image = play_area.draw_to_map(character, character.last_cords)
+    #         play_area.draw_to_map(ghost, ghost.last_cords, image)
+    #
+    #         files = [discord.File('images/modified/modified_map.png')]
+    #         await ctx.send(files=files)
+    #
+    #         await ctx.send("Where do you want to move? (&move <up | down | left | right>)")
+    #         next_move_message = await self.bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+    #         next_move = next_move_message.content.lower()
+    #         try:
+    #             if " " in next_move:
+    #                 command, option = next_move.split(" ")
+    #             else:
+    #                 command, option = next_move, None
+    #             if command in ["&m", "&move"]:
+    #                 if option in ['u', 'up']:
+    #                     moved, err_msg = play_area.move_player(character, (0, -1))
+    #                     if moved:
+    #                         pass
+    #                     else:
+    #                         await ctx.send("You cant move further up" if not err_msg else err_msg)
+    #                         continue
+    #                 elif option in ['d', 'down']:
+    #                     moved, err_msg = play_area.move_player(character, (0, 1))
+    #                     if moved:
+    #                         pass
+    #                     else:
+    #                         await ctx.send("You cant move further down" if not err_msg else err_msg)
+    #                         continue
+    #                 elif option in ['l', 'left']:
+    #                     moved, err_msg = play_area.move_player(character, (-1, 0))
+    #                     if moved:
+    #                         pass
+    #                     else:
+    #                         await ctx.send("You cant move further left" if not err_msg else err_msg)
+    #                         continue
+    #                 elif option in ['r', 'right']:
+    #                     moved, err_msg = play_area.move_player(character, (1, 0))
+    #                     if moved:
+    #                         pass
+    #                     else:
+    #                         await ctx.send("You cant move further right" if not err_msg else err_msg)
+    #                         continue
+    #                 else:
+    #                     continue
+    #             elif command in ["&a", "&att", "&attack"]:
+    #                 near_monster_list = play_area.is_near_monster(character, monsters)
+    #                 if not near_monster_list:
+    #                     await ctx.send("No monsters near you to attack!")
+    #                 elif len(near_monster_list) > 1:
+    #                     await ctx.send(f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum+1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
+    #                     while True:
+    #                         attacking = await self.bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+    #                         try:
+    #                             attacking_num = int(attacking)
+    #                             if attacking_num in range(len(near_monster_list)):
+    #                                 player_damage, weapon = character.attack(near_monster_list[attacking])
+    #                                 await ctx.send(f"{character.name} attacked {ghost.name} with {weapon} and hit them for {player_damage} damage! {ghost.name} now has {ghost.health} health left!")
+    #                             else:
+    #                                 continue
+    #                         except ValueError:
+    #                             continue
+    #                 else:
+    #                     player_damage, weapon = character.attack(near_monster_list[0])
+    #                     await ctx.send(f"{character.name} attacked {ghost.name} with {weapon} and hit them for {player_damage} damage! {ghost.name} now has {ghost.health} health left!")
+    #             elif command in ['&pass']:
+    #                 pass
+    #             moved, monster_damage = play_area.target_player(ghost, character)
+    #             if moved:
+    #                 pass
+    #             else:
+    #                 await ctx.send(f"{character.name} was attacked by {ghost.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {character.health} health left")
+    #         except ValueError:
+    #             continue
 
     @commands.command(name="Invite", aliases=[])
     async def invite_CMD(self, ctx, user: discord.User):
@@ -750,8 +750,9 @@ class General(commands.Cog):
             message = " ".join(check_anon[1:])
         else:
             by = ctx.author.nick if ctx.author.nick else ctx.author.name
-        embed = discord.Embed(title=f"Suggestion #{len(await suggestion_channel.history().flatten())}", color=discord.Color.green())
-        embed.add_field(name=f"Submitted by {by}", value=message)
+        embed = discord.Embed(color=discord.Color.green())
+        embed.add_field(name=f"Suggestion #{len(await suggestion_channel.history().flatten())}", value=message)
+        embed.set_author(name=by, icon_url=ctx.author.avatar_url if not by == "Anonymous" else "https://cdn.discordapp.com/attachments/735154858092658758/737148777147662386/anon.png")
         suggestion = await suggestion_channel.send(embed=embed)
         await suggestion.add_reaction('⬆️')
         await suggestion.add_reaction('⬇️')

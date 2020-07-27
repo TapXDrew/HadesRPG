@@ -44,10 +44,14 @@ class HadesBot(commands.AutoShardedBot):
 
     async def on_message(self, message):
         if message.channel.id == 735415970872557588 and message.author != self.user:
-            if not message.content.startswith("&suggest"):
-                await message.author.send("Hey! You tried to post into the suggestion channel! Rather than doing that, how about you use the `&suggest <message>` command instead? (P.S. You can submit an anonymous post by doing `&suggest -a <message>`) Here is the message you sent so you can re-submit it with the command!")
-                await message.author.send(message.content)
+            idea = message.content
+            if idea.startswith("&suggest "):
+                idea = idea[9:]
+            elif idea.startswith("&suggest"):
+                idea = idea[8:]
+            ctx = await self.get_context(message)
             await message.delete()
+            return await ctx.invoke(self.get_command('suggest'), message=idea)
         user = utils.userInfo.User(self, message)
 
         if user.active_character:
@@ -61,7 +65,7 @@ class HadesBot(commands.AutoShardedBot):
                          734999518357094442, 734998914872246362, 734676284097036349, 735005811897532486,
                          734675140184637521, 734680519173734430, 734680875039719496, 734685825513816065,
                          734710207220940821, 735016272345170010, 734709942514221056, 735017543965605908,
-                         734683106677751818, 734682946497413130, 734682763109728297, 734996724266827786, ]
+                         734683106677751818, 734682946497413130, 734682763109728297, 734996724266827786]
 
             if message.channel.id in locations:
                 message_value = 0
@@ -78,6 +82,7 @@ class HadesBot(commands.AutoShardedBot):
                 else:
                     return await self.process_commands(message)
                 character.xp += message_value
+                character.display_xp += message_value
                 user.update_value(column, character.char_dump)
                 user.update_value('active_character', character.char_dump)
                 level_info = await self.get_level_info(message, column)
@@ -85,6 +90,27 @@ class HadesBot(commands.AutoShardedBot):
                     await message.channel.send(f"{message.author.name} has leveled up to level {level_info['Current Level']}!")
 
         await self.process_commands(message)
+
+    async def on_raw_reaction_add(self, payload):
+        developers = [219090464064798720, 488478533786796033]
+        if payload.guild_id != 734592074342727771:
+            return
+        if payload.user_id not in developers:
+            return
+        if payload.channel_id != 735415970872557588:
+            return
+        if payload.emoji.name == "✅":
+            message = await self.get_channel(payload.channel_id).fetch_message(payload.message_id)
+            embed = message.embeds[0]
+            embed.add_field(name="Approved!", value="This idea will be implemented", inline=False)
+            await message.edit(embed=embed)
+        elif payload.emoji.name == "❎":
+            message = await self.get_channel(payload.channel_id).fetch_message(payload.message_id)
+            embed = message.embeds[0]
+            embed.add_field(name="Rejected!", value="This idea has been denied", inline=False)
+            await message.edit(embed=embed)
+        else:
+            pass
 
     async def get_level_info(self, ctx, column):
         user = utils.userInfo.User(self, ctx)
@@ -101,7 +127,8 @@ class HadesBot(commands.AutoShardedBot):
 
         if character_level > character.level:
             character.level = character_level
-            character.xp = 0
+            character.display_xp = 0
+            character.level_up_xp = needed_xp
             leveled_up = True
         else:
             leveled_up = False

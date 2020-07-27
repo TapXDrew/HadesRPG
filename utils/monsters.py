@@ -42,9 +42,10 @@ class Banshee(BaseMonster):
 
 
 class Ghost(BaseMonster):
-    def __init__(self, name, location, level, power, speed, health=10, armor=0, magic=utils.weapons.air(1)):
+    def __init__(self, location, level=5, power=12, speed=1, name="Ghost", health=10, armor=0, magic=utils.weapons.air(1)):
         super().__init__(name=name, location=location, level=level, power=power, speed=speed, health=health, armor=armor, magic=magic)
         self.image = 'images/monsters/ghost.png'
+        self.number = 9
         self.can_pass_over = [5]
 
     def attack(self, character):

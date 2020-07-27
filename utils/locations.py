@@ -1,5 +1,12 @@
+import math
 
+import discord
 from PIL import Image, ImageDraw, ImageFilter
+
+from utils.userInfo import User
+
+from utils.monsters import *
+from utils.characters import Angel, Demon
 
 
 class MapSizeError(Exception):
@@ -83,6 +90,7 @@ class BaseMap:
         self.map_size = map_size
         self.image = None
         self._map = self._generate_map()
+        self.monsters = []
 
     def _generate_map(self):
         return_map = []
@@ -92,6 +100,133 @@ class BaseMap:
                 map_row.append(0)
             return_map.append(map_row)
         return return_map
+
+    async def start_fight(self, bot, ctx, user):
+        character_dump = user.active_character
+        character_class_name = character_dump.split(";")[1]
+        character = eval(character_class_name)(character_dump)
+        character.number = 1
+        location = eval(character.location.lower())()
+        location.place_person_on_map(character, (3, 4))
+        if location.place not in ['isle', 'grove', 'hall', 'styx', 'palace', 'wasteland', 'volcano']:
+            return None
+        total_level = character.level
+
+        party = [(ctx.author, character)]
+        monsters = []
+
+        for number, follower in enumerate(character.party):
+            follower_discord_user = ctx.guild.get_member(follower)
+            follower_user = User(bot, ctx, user=follower_discord_user)
+
+            character_follower_dump = follower_user.active_character
+            character_class_name = character_follower_dump.split(";")[1]
+            follower_character = eval(character_class_name)(character_follower_dump)
+
+            follower_character.number = number + 2
+            total_level += follower_character.level
+
+            party.append((follower_discord_user, follower_character))
+            location.place_person_on_map(follower_character, (3, 4))
+
+        spawning_monsters = math.ceil(total_level/10)
+
+        if spawning_monsters <= 0:
+            spawning_monsters = 1
+        elif spawning_monsters > 5:
+            spawning_monsters = 5
+
+        for _ in range(spawning_monsters):
+            spawned_monster = random.choice(location.monsters)(location=location)
+            monsters.append(spawned_monster)
+            location.place_person_on_map(spawned_monster, (7, 4))
+
+        image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+
+        while True:
+            for char in party[1:]:
+                image = location.draw_to_map(char[1], char[1].last_cords, image)
+
+            for mons in monsters:
+                image = location.draw_to_map(mons, mons.last_cords, image)
+
+            for char in party:
+                embed = discord.Embed(title="Actions", color=discord.Color.green())
+                embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
+                files = [discord.File('images/modified/modified_map.png')]
+                await ctx.send(files=files)
+
+                next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+                next_move = next_move_message.content.lower()
+                try:
+                    if " " in next_move:
+                        command, option = next_move.split(" ")
+                    else:
+                        command, option = next_move, None
+                    if command in ["&m", "&move"]:
+                        if option in ['u', 'up']:
+                            moved, err_msg = location.move_player(character, (0, -1))
+                            if moved:
+                                pass
+                            else:
+                                await ctx.send("You cant move further up" if not err_msg else err_msg)
+                                continue
+                        elif option in ['d', 'down']:
+                            moved, err_msg = location.move_player(character, (0, 1))
+                            if moved:
+                                pass
+                            else:
+                                await ctx.send("You cant move further down" if not err_msg else err_msg)
+                                continue
+                        elif option in ['l', 'left']:
+                            moved, err_msg = location.move_player(character, (-1, 0))
+                            if moved:
+                                pass
+                            else:
+                                await ctx.send("You cant move further left" if not err_msg else err_msg)
+                                continue
+                        elif option in ['r', 'right']:
+                            moved, err_msg = location.move_player(character, (1, 0))
+                            if moved:
+                                pass
+                            else:
+                                await ctx.send("You cant move further right" if not err_msg else err_msg)
+                                continue
+                        else:
+                            continue
+                    elif command in ["&a", "&att", "&attack"]:
+                        near_monster_list = location.is_near_monster(character, monsters)
+                        if not near_monster_list:
+                            await ctx.send("No monsters near you to attack!")
+                        elif len(near_monster_list) > 1:
+                            await ctx.send(
+                                f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum + 1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
+                            while True:
+                                attacking = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+                                try:
+                                    attacking_num = int(attacking)
+                                    if attacking_num in range(len(near_monster_list)):
+                                        player_damage, weapon = character.attack(near_monster_list[attacking])
+                                        await ctx.send(f"{character.name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
+                                    else:
+                                        continue
+                                except ValueError:
+                                    continue
+                        else:
+                            player_damage, weapon = character.attack(near_monster_list[0])
+                            await ctx.send(
+                                f"{character.name} attacked {near_monster_list[0].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[0].name} now has {near_monster_list[0].health} health left!")
+                    elif command in ['&pass']:
+                        pass
+
+                    for monst in monsters:
+                        moved, monster_damage = location.target_player(monst, character)
+                        if moved:
+                            pass
+                        else:
+                            await ctx.send(f"{character.name} was attacked by {monst.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {character.health} health left")
+                except ValueError:
+                    continue
 
     def draw_to_map(self, item, location, modified_image_path=None):
 
@@ -350,6 +485,7 @@ class styx(Abyss):
         self.image = f'images/maps/map_{self.place}.jpg'
         self.icon = '👻'
         self.travel_locations = [bridge, hall, palace]
+        self.monsters = [Ghost]
 
 
 class palace(Abyss):
