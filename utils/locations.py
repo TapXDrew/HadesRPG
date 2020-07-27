@@ -101,12 +101,15 @@ class BaseMap:
             return_map.append(map_row)
         return return_map
 
-    async def start_fight(self, bot, ctx, user):
+    async def start_fight(self, bot, ctx, user, channel):
         character_dump = user.active_character
         character_class_name = character_dump.split(";")[1]
         character = eval(character_class_name)(character_dump)
         character.number = 1
         location = eval(character.location.lower())()
+
+        ctx.channel = channel
+
         location.place_person_on_map(character, (1, 1))
         if location.place not in ['isle', 'grove', 'hall', 'styx', 'palace', 'wasteland', 'volcano']:
             return None

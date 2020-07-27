@@ -459,7 +459,7 @@ class General(commands.Cog):
                 await ctx.author.add_roles(location_role)
                 await message.edit(content=f"{ctx.author.nick if ctx.author.nick else ctx.author.name} traveled to {traveling_to.capitalize()}" if not character.party else f"{ctx.author.nick if ctx.author.nick else ctx.author.name} and their party of {len(character.party):,} traveled to {traveling_to.capitalize()}")
 
-                await eval(traveling_to.lower())().start_fight(self.bot, ctx, user)
+                await eval(traveling_to.lower())().start_fight(self.bot, ctx, user, discord.utils.get(self.bot.get_guild(734592074342727771).channels, name=f"{react.emoji}│{traveling_to.lower()}"))
             else:
                 continue
 
