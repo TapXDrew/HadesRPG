@@ -107,7 +107,7 @@ class BaseMap:
         character = eval(character_class_name)(character_dump)
         character.number = 1
         location = eval(character.location.lower())()
-        location.place_person_on_map(character, (3, 4))
+        location.place_person_on_map(character, (1, 1))
         if location.place not in ['isle', 'grove', 'hall', 'styx', 'palace', 'wasteland', 'volcano']:
             return None
         total_level = character.level
@@ -127,7 +127,7 @@ class BaseMap:
             total_level += follower_character.level
 
             party.append((follower_discord_user, follower_character))
-            location.place_person_on_map(follower_character, (3, 4))
+            location.place_person_on_map(follower_character, (number + 2, 1))
 
         spawning_monsters = math.ceil(total_level/10)
 
@@ -136,10 +136,10 @@ class BaseMap:
         elif spawning_monsters > 5:
             spawning_monsters = 5
 
-        for _ in range(spawning_monsters):
+        for number in range(spawning_monsters):
             spawned_monster = random.choice(location.monsters)(location=location)
             monsters.append(spawned_monster)
-            location.place_person_on_map(spawned_monster, (7, 4))
+            location.place_person_on_map(spawned_monster, (number+1, 9))
 
         image = location.draw_to_map(party[0][1], party[0][1].last_cords)
 
