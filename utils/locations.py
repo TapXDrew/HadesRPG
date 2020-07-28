@@ -296,7 +296,7 @@ class BaseMap:
         if monster.target:
             for char in characters:
                 if char[0].id == monster.target:
-                    if char[0].health <= 0:
+                    if char[1].health <= 0:
                         break
                     return char[1]
 
