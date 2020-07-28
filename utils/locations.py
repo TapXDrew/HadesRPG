@@ -234,7 +234,7 @@ class BaseMap:
 
             for monster in monsters:
                 char = self.find_closest_player(party, monster)
-                moved, monster_damage = location.target_player(monster, char)
+                moved, monster_damage = location.target_player(monster, char[1])
                 if moved:
                     pass
                 else:
