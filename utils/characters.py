@@ -310,8 +310,8 @@ class BaseCharacter:
 
     def died(self):
         if self._health <= 0:
-            return False
-        return True
+            return True
+        return False
 
 
 class Demon(BaseCharacter):
