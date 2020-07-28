@@ -161,7 +161,7 @@ class General(commands.Cog):
         await ctx.author.add_roles(area_role)
         await ctx.author.add_roles(discord.utils.get(self.bot.get_guild(734592074342727771).roles, id=734915716528078848))
 
-        character_dump = f"{name.content};{character_type};{location};{1};{1};{0};{0};{0};{10};{0};{'Empty'};{'Empty'};{None};{None};{[]};{[]};{[location]};{10};{0};{0};{0};{None};{[]};{False};{url_image.attachments[0].url};{[area_role.id, character_role.id, character_type_role.id]}"
+        character_dump = f"{name.content};{character_type};{location};{1};{1};{0};{0};{0};{10};{0};{'sword'};{'Empty'};{None};{None};{[]};{[]};{[location]};{10};{0};{0};{0};{None};{[]};{False};{url_image.attachments[0].url};{[area_role.id, character_role.id, character_type_role.id]}"
         dbuser.create_character(character_type, character_dump)
         dbuser.update_value('active_character', character_dump)
 
