@@ -153,6 +153,12 @@ class BaseMap:
 
         while True:
             for char in party:
+                if char[1].health <= 0:
+                    party.remove(char)
+                if len(party) == 0:
+                    return await ctx.send("All players have died, the monsters have won!")
+                if len(monsters) == 0:
+                    return await ctx.send("All the monsters have been killed!")
                 attacking = 0
                 embed = discord.Embed(title="Actions", color=discord.Color.green())
                 embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
