@@ -202,6 +202,7 @@ class BaseMap:
                             near_monster_list = location.is_near_monster(char[1], monsters)
                             if not near_monster_list:
                                 await ctx.send("No monsters near you to attack!")
+                                break
                             elif len(near_monster_list) > 1:
                                 await ctx.send(f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum + 1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
                                 while True:
@@ -237,7 +238,7 @@ class BaseMap:
                 if moved:
                     pass
                 else:
-                    if char[1].died:
+                    if char[1]().died:
                         died = User(None, None, char[0])
                         if died.character_1 == died.active_character:
                             d_column = 'character_1'
@@ -298,7 +299,7 @@ class BaseMap:
                 if char[0].id == monster.target:
                     if char[1].health <= 0:
                         break
-                    return char[1]
+                    return char
 
         chars = [char for char in characters]
         lowest_length = float('inf')
@@ -308,7 +309,7 @@ class BaseMap:
             path = astar(self.map, start, char[1].last_cords, monster)
             if len(path) < lowest_length:
                 lowest_length = len(path)
-                closest = char[1]
+                closest = char
                 monster.target = char[0].id
         return closest
 
