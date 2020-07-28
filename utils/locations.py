@@ -130,7 +130,7 @@ class BaseMap:
             total_level += follower_character.level
 
             party.append((follower_discord_user, follower_character))
-            location.place_person_on_map(follower_character, (1, number + 2))
+            location.place_person_on_map(follower_character, (number + 2, random.randint(1, 3)))
 
         spawning_monsters = math.ceil(total_level/10)
 
@@ -144,13 +144,16 @@ class BaseMap:
             monsters.append(spawned_monster)
             location.place_person_on_map(spawned_monster, (9, number+1))
 
-        while True:
-            image = location.draw_to_map(party[0][1], party[0][1].last_cords)
-            for char in party:
-                image = location.draw_to_map(char[1], char[1].last_cords, image)
+        # Now we place all on the map before anyone makes a move
+        image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+        for player in party[1:]:
+            image = location.draw_to_map(player[1], player[1].last_cords, image)
+        for player in monsters:
+            image = location.draw_to_map(player, player.last_cords, image)
 
-                for mons in monsters:
-                    image = location.draw_to_map(mons, mons.last_cords, image)
+        while True:
+            for char in party:
+                attacking = 0
                 embed = discord.Embed(title="Actions", color=discord.Color.green())
                 embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
                 files = [discord.File('images/modified/modified_map.png')]
@@ -195,37 +198,63 @@ class BaseMap:
                         else:
                             continue
                     elif command in ["&a", "&att", "&attack"]:
-                        near_monster_list = location.is_near_monster(char[1], monsters)
-                        if not near_monster_list:
-                            await ctx.send("No monsters near you to attack!")
-                        elif len(near_monster_list) > 1:
-                            await ctx.send(
-                                f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum + 1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
-                            while True:
-                                attacking = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
-                                try:
-                                    attacking_num = int(attacking)
-                                    if attacking_num in range(len(near_monster_list)):
-                                        player_damage, weapon = char[1].attack(near_monster_list[attacking])
-                                        await ctx.send(f"{char[1].name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
-                                    else:
+                        while True:
+                            near_monster_list = location.is_near_monster(char[1], monsters)
+                            if not near_monster_list:
+                                await ctx.send("No monsters near you to attack!")
+                            elif len(near_monster_list) > 1:
+                                await ctx.send(f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum + 1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
+                                while True:
+                                    attacking = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
+                                    try:
+                                        attacking_num = int(attacking)
+                                        if attacking_num in range(len(near_monster_list)):
+                                            break
+                                        else:
+                                            continue
+                                    except ValueError:
                                         continue
-                                except ValueError:
-                                    continue
-                        else:
-                            player_damage, weapon = char[1].attack(near_monster_list[0])
-                            await ctx.send(f"{char[1].name} attacked {near_monster_list[0].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[0].name} now has {near_monster_list[0].health} health left!")
+                            else:
+                                player_damage, weapon = char[1].attack(near_monster_list[attacking])
+                                await ctx.send(f"{char[1].name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
+                                if near_monster_list[attacking].health <= 0:
+                                    monsters.remove(near_monster_list[attacking])
+                                break
                     elif command in ['&pass']:
                         pass
 
-                    for monst in monsters:
-                        moved, monster_damage = location.target_player(monst, char[1])
-                        if moved:
-                            pass
-                        else:
-                            await ctx.send(f"{char[1].name} was attacked by {monst.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {char[1].health} health left")
+                    image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+                    for player in party[1:]:
+                        image = location.draw_to_map(player[1], player[1].last_cords, image)
+                    for monster in monsters:
+                        image = location.draw_to_map(monster, monster.last_cords, image)
                 except ValueError:
                     continue
+
+            for monster in monsters:
+                char = self.find_closest_player(party, monster)
+                moved, monster_damage = location.target_player(monster, char)
+                if moved:
+                    pass
+                else:
+                    if char[1].died:
+                        died = User(None, None, char[0])
+                        if died.character_1 == died.active_character:
+                            d_column = 'character_1'
+                        elif died.character_2 == died.active_character:
+                            d_column = 'character_2'
+                        elif died.character_3 == died.active_character:
+                            d_column = 'character_3'
+                        else:
+                            return
+                        died.update_value(d_column, None)
+                        await ctx.send(f"{monster.name} hit {char[1].name} with {monster_damage[1]} for {monster_damage[1]} damage and killed them!!")
+                    else:
+                        await ctx.send(f"{char[1].name} was attacked by {monster.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {char[1].health} health left")
+                image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+                image = location.draw_to_map(monster, monster.last_cords, image)
+                for player in party[1:]:
+                    image = location.draw_to_map(player[1], player[1].last_cords, image)
 
     def draw_to_map(self, item, location, modified_image_path=None):
 
@@ -263,25 +292,28 @@ class BaseMap:
         except IndexError:
             return False, None
 
-    def find_closest_player(self, monster):
-        ends = []
+    def find_closest_player(self, characters, monster):
+        if monster.target:
+            for char in characters:
+                if char[0].id == monster.target:
+                    if char[0].health <= 0:
+                        break
+                    return char[1]
+
+        chars = [char for char in characters]
         lowest_length = float('inf')
-        lowest_length_cords = None
+        closest = None
         start = monster.last_cords
-        for x in self.map:
-            for y in x:
-                if y in [1, 2, 3, 4]:
-                    ends.append((self.map.index(x), x.index(y)))
-        for end in ends:
-            path = astar(self.map, start, end, monster)
+        for char in chars:
+            path = astar(self.map, start, char[1].last_cords, monster)
             if len(path) < lowest_length:
                 lowest_length = len(path)
-                lowest_length_cords = path
-        return lowest_length_cords
+                closest = char[1]
+                monster.target = char[0].id
+        return closest
 
     def target_player(self, monster, player):
         path = astar(self.map, monster.last_cords, player.last_cords, monster)
-        print(path)
         if len(path) > 2:
             self.map[path[1][0]][path[1][1]] = monster.number
             self.map[monster.last_cords[0]][monster.last_cords[1]] = 0

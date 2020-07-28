@@ -308,6 +308,11 @@ class BaseCharacter:
             attacked = weapon_1.attack(self, monster)
         return attacked, weapon_1.name
 
+    def died(self):
+        if self._health >= 1:
+            return False
+        return True
+
 
 class Demon(BaseCharacter):
     def __init__(self, initial_data):

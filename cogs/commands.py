@@ -388,7 +388,7 @@ class General(commands.Cog):
         elif user.character_3 == user.active_character:
             column = 'character_3'
         else:
-            return await ctx.send("INVALID PLAYER DATA")
+            return
 
         if character.in_party and character.party_master != ctx.author.id:
             return await ctx.send("You must `&leave` your current party to travel!")
