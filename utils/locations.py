@@ -244,7 +244,6 @@ class BaseMap:
                 if moved:
                     pass
                 else:
-                    print(monster_damage)
                     if char[1].died:
                         died = User(None, None, char[0])
                         if died.character_1 == died.active_character:
@@ -256,7 +255,7 @@ class BaseMap:
                         else:
                             return
                         died.update_value(d_column, None)
-                        await ctx.send(f"{monster.name} hit {char[1].name} with {monster_damage[1]} for {monster_damage[1]} damage and killed them!!")
+                        await ctx.send(f"{monster.name} hit {char[1].name} with {monster_damage[1]} for {monster_damage[0]} damage and killed them!!")
                     else:
                         await ctx.send(f"{char[1].name} was attacked by {monster.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {char[1].health} health left")
                 image = location.draw_to_map(party[0][1], party[0][1].last_cords)

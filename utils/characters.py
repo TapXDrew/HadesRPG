@@ -309,7 +309,7 @@ class BaseCharacter:
         return attacked, weapon_1.name
 
     def died(self):
-        if self._health >= 1:
+        if self._health <= 0:
             return False
         return True
 
