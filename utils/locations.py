@@ -238,7 +238,7 @@ class BaseMap:
                 if moved:
                     pass
                 else:
-                    if char[1]().died:
+                    if char[1].died:
                         died = User(None, None, char[0])
                         if died.character_1 == died.active_character:
                             d_column = 'character_1'
