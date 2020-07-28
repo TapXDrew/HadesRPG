@@ -244,6 +244,7 @@ class BaseMap:
                 if moved:
                     pass
                 else:
+                    print(monster_damage)
                     if char[1].died:
                         died = User(None, None, char[0])
                         if died.character_1 == died.active_character:
