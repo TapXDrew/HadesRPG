@@ -116,7 +116,9 @@ class BaseMap:
         total_level = character.level
 
         party = [(ctx.author, character)]
+        original_party = [(ctx.author, character)]
         monsters = []
+        near_player = []
 
         for number, follower in enumerate(character.party):
             follower_discord_user = ctx.guild.get_member(follower)
@@ -130,6 +132,7 @@ class BaseMap:
             total_level += follower_character.level
 
             party.append((follower_discord_user, follower_character))
+            original_party.append((follower_discord_user, follower_character))
             location.place_person_on_map(follower_character, (number + 2, random.randint(1, 3)))
 
         spawning_monsters = math.ceil(total_level/10)
@@ -151,92 +154,106 @@ class BaseMap:
         for player in monsters:
             image = location.draw_to_map(player, player.last_cords, image)
 
-        while True:
-            for char in party:
-                if char[1].health <= 0:
-                    party.remove(char)
-                if len(party) == 0:
-                    return await ctx.send("All players have died, the monsters have won!")
-                if len(monsters) == 0:
-                    return await ctx.send("All the monsters have been killed!")
-                attacking = 0
-                embed = discord.Embed(title="Actions", color=discord.Color.green())
-                embed.add_field(name=f"What action do you want to perform {char[0].name}?", value="__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n__Attack__: **&attack**")
-                files = [discord.File('images/modified/modified_map.png')]
-                await ctx.send(files=files, embed=embed)
-
-                next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == char[0].id)
-                next_move = next_move_message.content.lower()
-                try:
-                    if " " in next_move:
-                        command, option = next_move.split(" ")
-                    else:
-                        command, option = next_move, None
-                    if command in ["&m", "&move"]:
-                        if option in ['u', 'up']:
-                            moved, err_msg = location.move_player(char[1], (0, -1))
-                            if moved:
-                                pass
+        while True:  # Main game loop
+            for char in party:  # Loop over each character to give everyone a turn
+                while True:  # Main player turn loop
+                    discord_user = discord.utils.get(ctx.guild.members, id=ctx.author.id)
+                    if char[1].health <= 0:  # Player died
+                        party.remove(char)  # So we remove them from the party
+                    if len(party) == 0:  # Nobody is alive
+                        for dead in original_party:
+                            died = User(None, None, dead[0])
+                            if died.character_1 == died.active_character:
+                                d_column = 'character_1'
+                            elif died.character_2 == died.active_character:
+                                d_column = 'character_2'
+                            elif died.character_3 == died.active_character:
+                                d_column = 'character_3'
                             else:
-                                await ctx.send("You cant move further up" if not err_msg else err_msg)
-                                continue
-                        elif option in ['d', 'down']:
-                            moved, err_msg = location.move_player(char[1], (0, 1))
-                            if moved:
-                                pass
+                                return
+                            died.update_value(d_column, None)
+                            died.update_value("active_character", None)
+                        return await ctx.send("The monsters have won!")
+                    elif len(monsters) == 0:
+                        return await ctx.send("You have killed all the monsters!")
+                    embed = discord.Embed(title="Actions", color=discord.Color.green if not self.is_near_monster(char[1], monsters) else discord.Color.red())
+                    embed.add_field(name=f"What action do you want to preform {discord_user.nick if discord_user.nick else discord_user.name}?", value=f"__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n{'__Attack__: **&attack**' if self.is_near_monster(char[1], monsters) else None}")
+                    files = [discord.File('images/modified/modified_map.png')]
+                    await ctx.send(filed=files, embed=embed)
+                    while True:  # Main action selection loop
+                        next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == char[0].id)
+                        next_move = next_move_message.content.lower()
+                        try:
+                            if " " in next_move:
+                                command, option = next_move.split(" ")
                             else:
-                                await ctx.send("You cant move further down" if not err_msg else err_msg)
-                                continue
-                        elif option in ['l', 'left']:
-                            moved, err_msg = location.move_player(char[1], (-1, 0))
-                            if moved:
-                                pass
-                            else:
-                                await ctx.send("You cant move further left" if not err_msg else err_msg)
-                                continue
-                        elif option in ['r', 'right']:
-                            moved, err_msg = location.move_player(char[1], (1, 0))
-                            if moved:
-                                pass
-                            else:
-                                await ctx.send("You cant move further right" if not err_msg else err_msg)
-                                continue
-                        else:
+                                command, option = next_move, None
+                        except ValueError:
                             continue
-                    elif command in ["&a", "&att", "&attack"]:
-                        while True:
+                        if command in ["&m", "&move"]:
+                            if option in ['u', 'up']:
+                                moved, err_msg = location.move_player(char[1], (0, -1))
+                                if moved:
+                                    pass
+                                else:
+                                    await ctx.send("You cant move further up" if not err_msg else err_msg)
+                                    continue
+                            elif option in ['d', 'down']:
+                                moved, err_msg = location.move_player(char[1], (0, 1))
+                                if moved:
+                                    pass
+                                else:
+                                    await ctx.send("You cant move further down" if not err_msg else err_msg)
+                                    continue
+                            elif option in ['l', 'left']:
+                                moved, err_msg = location.move_player(char[1], (-1, 0))
+                                if moved:
+                                    pass
+                                else:
+                                    await ctx.send("You cant move further left" if not err_msg else err_msg)
+                                    continue
+                            elif option in ['r', 'right']:
+                                moved, err_msg = location.move_player(char[1], (1, 0))
+                                if moved:
+                                    pass
+                                else:
+                                    await ctx.send("You cant move further right" if not err_msg else err_msg)
+                                    continue
+                            else:
+                                continue
+                            break
+                        elif command in ['&a', '&att', '&attack']:
+                            if option not in ['up', 'down', 'left', 'right']:
+                                await ctx.send("Cord attacking not implemented yet!")
                             near_monster_list = location.is_near_monster(char[1], monsters)
                             if not near_monster_list:
-                                await ctx.send("No monsters near you to attack!")
-                                break
-                            elif len(near_monster_list) > 1:
-                                await ctx.send(f"There are {len(near_monster_list)} monsters near you! What one do you want to attack?\n{', '.join([f'{enum + 1}) {monster.name}' for enum, monster in enumerate(near_monster_list)])}")
-                                while True:
-                                    attacking = await bot.wait_for('message', check=lambda check: check.author.id == ctx.author.id)
-                                    try:
-                                        attacking_num = int(attacking)
-                                        if attacking_num in range(len(near_monster_list)):
-                                            break
-                                        else:
-                                            continue
-                                    except ValueError:
-                                        continue
-                            else:
-                                player_damage, weapon = char[1].attack(near_monster_list[attacking])
-                                await ctx.send(f"{char[1].name} attacked {near_monster_list[attacking].name} with {weapon} and hit them for {player_damage} damage! {near_monster_list[attacking].name} now has {near_monster_list[attacking].health} health left!")
-                                if near_monster_list[attacking].health <= 0:
-                                    monsters.remove(near_monster_list[attacking])
-                                break
-                    elif command in ['&pass']:
-                        pass
+                                await ctx.send("No monster was found there!")
+                                continue
+                            for near in near_monster_list:
+                                if (char[1].last_cords[0], char[1].last_cords[1]-1) == near:
+                                    near_player.append(('up', near))
+                                if (char[1].last_cords[0], char[1].last_cords[1]+1) == near:
+                                    near_player.append(('down', near))
+                                if (char[1].last_cords[0]-1, char[1].last_cords[1]) == near:
+                                    near_player.append(('left', near))
+                                if (char[1].last_cords[0]+1, char[1].last_cords[1]-1) == near:
+                                    near_player.append(('right', near))
+                            for near, mons in near_player:
+                                if near == option:
+                                    player_damage, weapon = char[1].attack(mons)
+                                    await ctx.send(f"{char[1].name} attacked {mons.name} with {weapon} and hit them for {player_damage} damage! {mons.name} now has {mons.health} health left!")
+                                    if mons.health <= 0:
+                                        monsters.remove(mons)
+                                    break
+                        elif command in ['&pass', '&p']:
+                            break
 
-                    image = location.draw_to_map(party[0][1], party[0][1].last_cords)
-                    for player in party[1:]:
-                        image = location.draw_to_map(player[1], player[1].last_cords, image)
-                    for monster in monsters:
-                        image = location.draw_to_map(monster, monster.last_cords, image)
-                except ValueError:
-                    continue
+                        # Updates the game board with the player movement
+                        image = location.draw_to_map(party[0][1], party[0][1].last_cords)
+                        for player in party[1:]:
+                            image = location.draw_to_map(player[1], player[1].last_cords, image)
+                        for monster in monsters:
+                            image = location.draw_to_map(monster, monster.last_cords, image)
 
             for monster in monsters:
                 char = self.find_closest_player(party, monster)
@@ -245,16 +262,6 @@ class BaseMap:
                     pass
                 else:
                     if char[1].died:
-                        died = User(None, None, char[0])
-                        if died.character_1 == died.active_character:
-                            d_column = 'character_1'
-                        elif died.character_2 == died.active_character:
-                            d_column = 'character_2'
-                        elif died.character_3 == died.active_character:
-                            d_column = 'character_3'
-                        else:
-                            return
-                        died.update_value(d_column, None)
                         await ctx.send(f"{monster.name} hit {char[1].name} with {monster_damage[1]} for {monster_damage[0]} damage and killed them!!")
                     else:
                         await ctx.send(f"{char[1].name} was attacked by {monster.name} using {monster_damage[1]} for {monster_damage[0]} damage! You now have {char[1].health} health left")
