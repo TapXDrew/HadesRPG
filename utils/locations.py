@@ -176,7 +176,7 @@ class BaseMap:
                         return await ctx.send("The monsters have won!")
                     elif len(monsters) == 0:
                         return await ctx.send("You have killed all the monsters!")
-                    embed = discord.Embed(title="Actions", color=discord.Color.green if not self.is_near_monster(char[1], monsters) else discord.Color.red())
+                    embed = discord.Embed(title="Actions", color=discord.Color.green() if not self.is_near_monster(char[1], monsters) else discord.Color.red())
                     embed.add_field(name=f"What action do you want to preform {discord_user.nick if discord_user.nick else discord_user.name}?", value=f"__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n{'__Attack__: **&attack**' if self.is_near_monster(char[1], monsters) else None}")
                     files = [discord.File('images/modified/modified_map.png')]
                     await ctx.send(filed=files, embed=embed)
