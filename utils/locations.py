@@ -179,7 +179,7 @@ class BaseMap:
                     embed = discord.Embed(title="Actions", color=discord.Color.green() if not self.is_near_monster(char[1], monsters) else discord.Color.red())
                     embed.add_field(name=f"What action do you want to preform {discord_user.nick if discord_user.nick else discord_user.name}?", value=f"__Move__: **&move <up | down | left | right>**\n__Pass__: **&pass**\n{'__Attack__: **&attack**' if self.is_near_monster(char[1], monsters) else None}")
                     files = [discord.File('images/modified/modified_map.png')]
-                    await ctx.send(filed=files, embed=embed)
+                    await ctx.send(files=files, embed=embed)
                     while True:  # Main action selection loop
                         next_move_message = await bot.wait_for('message', check=lambda check: check.author.id == char[0].id)
                         next_move = next_move_message.content.lower()
@@ -221,7 +221,6 @@ class BaseMap:
                                     continue
                             else:
                                 continue
-                            break
                         elif command in ['&a', '&att', '&attack']:
                             if option not in ['up', 'down', 'left', 'right']:
                                 await ctx.send("Cord attacking not implemented yet! Check back later")
@@ -244,9 +243,8 @@ class BaseMap:
                                     await ctx.send(f"{char[1].name} attacked {mons.name} with {weapon} and hit them for {player_damage} damage! {mons.name} now has {mons.health} health left!")
                                     if mons.health <= 0:
                                         monsters.remove(mons)
-                                    break
                         elif command in ['&pass', '&p']:
-                            break
+                            pass
 
                         # Updates the game board with the player movement
                         image = location.draw_to_map(party[0][1], party[0][1].last_cords)
@@ -254,6 +252,7 @@ class BaseMap:
                             image = location.draw_to_map(player[1], player[1].last_cords, image)
                         for monster in monsters:
                             image = location.draw_to_map(monster, monster.last_cords, image)
+                        break
 
             for monster in monsters:
                 char = self.find_closest_player(party, monster)
