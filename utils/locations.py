@@ -253,6 +253,7 @@ class BaseMap:
                         for monster in monsters:
                             image = location.draw_to_map(monster, monster.last_cords, image)
                         break
+                    break
 
             for monster in monsters:
                 char = self.find_closest_player(party, monster)
