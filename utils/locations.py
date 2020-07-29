@@ -229,13 +229,13 @@ class BaseMap:
                                 await ctx.send("No monster was found there!")
                                 continue
                             for near in near_monster_list:
-                                if (char[1].last_cords[0], char[1].last_cords[1]-1) == near:
+                                if (char[1].last_cords[0], char[1].last_cords[1]-1) == near.last_cords:
                                     near_player.append(('up', near))
-                                if (char[1].last_cords[0], char[1].last_cords[1]+1) == near:
+                                if (char[1].last_cords[0], char[1].last_cords[1]+1) == near.last_cords:
                                     near_player.append(('down', near))
-                                if (char[1].last_cords[0]-1, char[1].last_cords[1]) == near:
+                                if (char[1].last_cords[0]-1, char[1].last_cords[1]) == near.last_cords:
                                     near_player.append(('left', near))
-                                if (char[1].last_cords[0]+1, char[1].last_cords[1]-1) == near:
+                                if (char[1].last_cords[0]+1, char[1].last_cords[1]-1) == near.last_cords:
                                     near_player.append(('right', near))
                             for near, mons in near_player:
                                 if near == option:
