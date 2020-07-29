@@ -224,7 +224,7 @@ class BaseMap:
                             break
                         elif command in ['&a', '&att', '&attack']:
                             if option not in ['up', 'down', 'left', 'right']:
-                                await ctx.send("Cord attacking not implemented yet!")
+                                await ctx.send("Cord attacking not implemented yet! Check back later")
                             near_monster_list = location.is_near_monster(char[1], monsters)
                             if not near_monster_list:
                                 await ctx.send("No monster was found there!")
